@@ -1,0 +1,188 @@
+---
+title: "cameras data"
+author: "Acadia Berry"
+date: "2023-12-18"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+This data set represents a set of 28 cameras. Price is used to estimate Consumer Reports Score. The units are dollars and points, respectively.
+
+```{r}
+# Import data set
+
+Cameras <- read.csv("Cameras.csv")
+
+```
+
+
+```{r}
+# make an ID field
+# first to last record
+ID <- Cameras$ID <- 1:nrow(Cameras)
+
+# summary statistics
+summary(Cameras)
+```
+```{r}
+hist(Cameras$Price)
+hist(Cameras$Score)
+
+```
+
+
+
+
+```{r}
+# regress score on price
+reg1 <- lm(Score ~ Price, data = Cameras) 
+plot(reg1)
+
+
+# coefficients for equation
+coefficients(reg1)
+
+# model summary
+summary(reg1)
+
+```
+
+Regression equation: $y = 46.669 + 0.0552(x)$
+
+The estimated Score rating equals 46.669 points plus 0.0552 times the dollar amount.
+
+The slope of the regression equation indicates the estimated change in Y per unit increase in X.
+For this regression, per every dollar amount increase, the estimated change in Y is 0.0552.
+
+In this regression equation $ r^2 = 0.4668 $ is the proportion of variability in score that is accounted for by price. 
+
+$s = 4.982$ on 26 degrees of freedom.
+4.982 represents the size of the typical difference between the predicted value of scores and the actual observed value of scores, with the unit expressed as scores.
+
+
+```{r}
+# score rating by price
+# we can see a far removed point over 400 
+plot(Cameras$Price, Cameras$Score, main= "Score Rating by Price",
+     xlab= "Price",
+     ylab= "Score")
+abline(reg1, col="red")
+
+
+# residuals and standardized residuals
+# # residuals = y-yhat
+rstandard(reg1) 
+residuals(reg1)
+reg1$residuals[28]
+reg1$residuals[17]
+```
+
+In this regression, outliers are defined to be the observations whose absolute value of standardized
+residual exceeds 2. The score of -2.357 for observation number 17 exceeds the threshold of 2 and the
+score of observation 28 with a score of -2.436, respectively. Observation 17’s has a residual score of
+-9.768. The true score of 59 points for observation 17 is much lower than its predicted score of
+68.768, given its price of 400 dollars. Observation 28 has a residual score of -11.851. The original
+score of observation 28 of 42 points is much lower than the predicted score of 53.851, given its price
+point at 130 dollars. 
+
+```{r}
+# High-leverage values
+
+# plot for leverage values
+plot(hatvalues(reg1), type = "h", xlab= "Index", ylab= "Leverage values")
+
+# list of leverage values
+hatvalues(reg1)
+```
+
+Observation 17 has a leverage value of 0.308, the largest of all leverage values. As shown in the plot
+below, the point above 17 is extremely high in comparison to the rest of the points. One can conclude
+observation 17 is a high leverage point. A high leverage point is a value that is extreme in the X
+space. In this regression analysis, a high leverage point would be a value indicating a very low or very
+high price in comparison to the rest of the price data. In this case, observation 17 is a camera with a
+very high price. 
+
+
+
+
+```{r}
+# Influential Observations
+
+# Cooks distance
+# df2 = n-m-1 = 28-1-1 = 26
+
+# to find median of F distribution with 1 and 26 DF
+qf(0.5,1,26)
+
+
+# for 25th percentile, any between 25th and 50th are tending
+qf(0.25,1,26)
+
+sort(cooks.distance(reg1)) 
+```
+
+Cooks distance was calculated to identify the threshold for influential observations. Any values calculated with Cooks Distance above 0.4679 are considered influential. The cutoff for Cook’s distance scores at the 25th percentile is 0.1037 and at the 50th percentile is 0.468.
+
+Observation 17 has a leverage value of 0.308, a residual score of -9.768 and a standardized residual
+value of greater than 2 (-2.357), and a Cook’s distance score of 01.239 making it an outlier. Observation 17 exceeds the F-median value of 0.468 at of 1.239 and is statistically influential.
+
+Observation 28 has a leverage value of 0.047 and standardized residual value of -2.436. Due to its
+absolute residual value being over 2, it is considered an outsider. Observation 28 has a Cook’s distance
+score of 0.146. It falls between the F-25th and F-median value, meaning it is tending toward influential.
+All other observations are not statistically influential. 
+
+
+```{r}
+# verify assumptions
+
+par(mfrow= c(2,2)); plot(reg1, pch=19)
+#plot(reg1)
+```
+
+The independence, constant variance, zero mean, and normality assumptions are verified through analysis
+of the Residuals vs Fitted plot and Normal Q-Q plot. The pattern of the Residuals vs Fitted scatterplot
+does not seem to increase from left to right, therefore the zero mean assumption is verified. There is no
+obvious curvature in the pattern, which verifies the independence assumption. It could be argued the
+Residual vs Fitted plot displays a funnel pattern which would violate the constant variance assumption,
+even with observation 28 and observation 17 out of the picture (observations which were already
+confirmed to be influential or tending toward influential), but this assertion is not conclusive. The normal
+Q-Q plot shows the bulk of the residuals lie near the straight line on the plot, aside from observation 28
+and observation 17. In the bottom left of the plot, the points seem to dip below the line, but besides this,
+the normality assumption is verified. 
+
+```{r}
+
+summary(reg1)
+    #p value: 6.16e-05, is very small 
+     # b0 ( y int) = 46.66880
+     # b1 (slope) = 0.05525
+     # sb1 (error) = 0.01158
+     # t (test of b1/sb1)= 4.771
+```
+
+Regression equation: 
+$𝑦̂ = 46.66880 + 0.05525(𝑥), 𝑡 = 4.771, p = 6.16e-05$
+
+Null and alternative hypotheses:
+$H_0: 𝛽1 = 0$: no linear relationship exists between Score and Price
+$H_a: 𝛽1 ≠ 0$: linear relationship exists between Score and Price
+
+The p-value (6.16e-05) for the t-test result (4.771) is very small, therefore, we reject the null
+hypothesis of $H_0: 𝛽1 = 0$ and conclude that a linear relationship does exist between Score and
+Price ($H_a: 𝛽1 ≠ 0$). 
+
+
+```{r}
+# 95% prediction interval for $250 camera
+camera250 <-data.frame(Price=250)
+predict(reg1, camera250, interval = "prediction")
+```
+
+There is 95% confidence that the score of a camera with a price of 250 dollars lies between 49.91
+and 71.05 points. 
+
